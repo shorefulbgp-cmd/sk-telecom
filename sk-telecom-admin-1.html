@@ -1,10 +1,188 @@
 
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SK TELECOM Admin</title>
+<style>
+body{font-family:Arial;background:#f1f4f9;margin:0;padding:20px}
+.container{max-width:500px;margin:auto;background:white;padding:20px;border-radius:12px}
+h2{text-align:center;color:#1456a0}
+input,button{width:100%;padding:13px;margin:7px 0;box-sizing:border-box;border-radius:7px;border:1px solid #ccc}
+button{background:#1456a0;color:white;border:0;font-weight:bold}
+.delete{background:#d93025}
+.product{border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:8px}
+img{max-width:100%;height:140px;object-fit:contain}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>SK TELECOM</h2>
+<h3>Admin Login</h3>
+
+<div id="login">
+<input id="email" type="email" placeholder="Admin Email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn">Login</button>
+</div>
+
+<div id="dashboard" class="hidden">
+<h3>নতুন পণ্য যোগ করুন</h3>
+<input id="name" placeholder="পণ্যের নাম">
+<input id="price" type="number" placeholder="পণ্যের দাম">
+<input id="category" placeholder="ক্যাটাগরি">
+<input id="imageUrl" type="url" placeholder="ছবির URL">
+<button id="addBtn">পণ্য যোগ করুন</button>
+<button id="logoutBtn">Logout</button>
+<hr>
+<h3>আমার পণ্যসমূহ</h3>
+<div id="products">লোড হচ্ছে...</div>
+</div>
+<p id="message"></p>
+</div>
+
+<script type="module">
+import {initializeApp}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getAuth, signInWithEmailAndPassword,
+onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+getFirestore, collection, addDoc,
+getDocs, deleteDoc, doc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDHJjDUhsj43drdHBBzLvJairsQ2tp4VWA",
-  authDomain: "sk-telecom-49e8c.firebaseapp.com",
-  projectId: "sk-telecom-49e8c",
-  storageBucket: "sk-telecom-49e8c.firebasestorage.app",
-  messagingSenderId: "628340038367",
-  appId: "1:628340038367:web:6076b161cdfbd5b665a76a",
-  measurementId: "G-JEXG63XR3H"
+apiKey: "AIzaSyDHJjDUhsj43drdHBBzLvJairsQ2tp4VWA",
+authDomain: "sk-telecom-49e8c.firebaseapp.com",
+projectId: "sk-telecom-49e8c",
+storageBucket: "sk-telecom-49e8c.firebasestorage.app",
+messagingSenderId: "628340038367",
+appId: "1:628340038367:web:6076b161cdfbd5b665a76a"
 };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = id => document.getElementById(id);
+const message = text => $("message").textContent = text;
+
+$("loginBtn").onclick = async () => {
+try {
+await signInWithEmailAndPassword(
+auth, $("email").value.trim(), $("password").value
+);
+message("Login সফল হয়েছে");
+} catch(e) {
+message("Login হয়নি: " + e.message);
+}
+};
+
+onAuthStateChanged(auth, user => {
+$("login").classList.toggle("hidden", !!user);
+$("dashboard").classList.toggle("hidden", !user);
+if(user) loadProducts();
+});
+
+$("logoutBtn").onclick = () => signOut(auth);
+
+$("addBtn").onclick = async () => {
+const name = $("name").value.trim();
+const price = Number($("price").value);
+const category = $("category").value.trim();
+const imageUrl = $("imageUrl").value.trim();
+
+if(!name || !price || price < 0) {
+message("পণ্যের নাম ও সঠিক দাম লিখুন");
+return;
+}
+
+if(imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+message("সঠিক ছবির URL দিন");
+return;
+}
+
+try {
+await addDoc(collection(db,"products"), {
+name, price, category, imageUrl,
+createdAt: serverTimestamp()
+});
+message("পণ্য সফলভাবে যোগ হয়েছে");
+$("name").value = "";
+$("price").value = "";
+$("category").value = "";
+$("imageUrl").value = "";
+loadProducts();
+} catch(e) {
+message("পণ্য যোগ হয়নি: " + e.message);
+}
+};
+
+async function loadProducts() {
+const area = $("products");
+area.textContent = "লোড হচ্ছে...";
+
+try {
+const snapshot = await getDocs(collection(db,"products"));
+area.replaceChildren();
+
+if(snapshot.empty) {
+area.textContent = "এখনো কোনো পণ্য যোগ করা হয়নি";
+return;
+}
+
+snapshot.forEach(item => {
+const p = item.data();
+const card = document.createElement("div");
+card.className = "product";
+
+const title = document.createElement("h3");
+title.textContent = p.name || "";
+
+const price = document.createElement("p");
+price.textContent = "দাম: ৳" + (p.price ?? "");
+
+const category = document.createElement("p");
+category.textContent = "ক্যাটাগরি: " + (p.category || "");
+
+card.append(title, price, category);
+
+if(p.imageUrl) {
+const img = document.createElement("img");
+img.src = p.imageUrl;
+img.alt = p.name || "Product";
+img.onerror = () => img.remove();
+card.append(img);
+}
+
+const btn = document.createElement("button");
+btn.className = "delete";
+btn.textContent = "Delete";
+btn.onclick = async () => {
+if(confirm("এই পণ্যটি মুছে ফেলবেন?")) {
+try {
+await deleteDoc(doc(db,"products",item.id));
+message("পণ্য মুছে ফেলা হয়েছে");
+loadProducts();
+} catch(e) {
+message("মুছতে সমস্যা হয়েছে: " + e.message);
+}
+}
+};
+
+card.append(btn);
+area.append(card);
+});
+} catch(e) {
+area.textContent = "পণ্য লোড হয়নি: " + e.message;
+}
+}
+</script>
+</body>
+</html>
