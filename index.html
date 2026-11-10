@@ -56,25 +56,199 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:#999;font-size:13px
 </main>
 <footer><div class="wrap foot"><span>© <span id="year"></span> SK TELECOM. সর্বস্বত্ব সংরক্ষিত।</span><span>Premium Black & Gold Online Shop</span></div></footer>
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeCart()"><aside class="drawer"><div class="drawer-top"><h2>আপনার কার্ট</h2><button class="close" onclick="closeCart()">বন্ধ করুন ✕</button></div><div id="cartItems"></div><div class="total"><span>মোট</span><strong id="total">৳০</strong></div><h3>অর্ডারের তথ্য</h3><label>আপনার নাম</label><input class="field" id="customerName" placeholder="নাম লিখুন"><label>মোবাইল নম্বর</label><input class="field" id="customerPhone" placeholder="01XXXXXXXXX" inputmode="tel"><label>ডেলিভারি ঠিকানা</label><textarea class="field" id="customerAddress" placeholder="সম্পূর্ণ ঠিকানা লিখুন" rows="3"></textarea><button class="btn gold" style="width:100%" onclick="checkout()">WhatsApp-এ অর্ডার পাঠান</button><p class="notice">WhatsApp নম্বর সেট না করা থাকলে অর্ডার বার্তা কপি করে দোকানে পাঠান।</p></aside></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <script>
-const products=[
-{id:1,name:"স্মার্টফোন",cat:"ফোন",desc:"আপনার পছন্দের ব্র্যান্ড ও মডেল",price:0,icon:"📱"},
-{id:2,name:"ফাস্ট চার্জার",cat:"এক্সেসরিজ",desc:"দ্রুত চার্জিংয়ের জন্য চার্জার",price:650,icon:"🔌"},
-{id:3,name:"ওয়্যারলেস ইয়ারবাড",cat:"এক্সেসরিজ",desc:"দৈনন্দিন ব্যবহারের অডিও গ্যাজেট",price:1250,icon:"🎧"},
-{id:4,name:"স্মার্টওয়াচ",cat:"গ্যাজেট",desc:"স্টাইলিশ স্মার্ট গ্যাজেট",price:1850,icon:"⌚"},
-{id:5,name:"মোবাইল কভার",cat:"এক্সেসরিজ",desc:"বিভিন্ন মডেলের সুরক্ষামূলক কভার",price:250,icon:"📲"},
-{id:6,name:"ব্লুটুথ স্পিকার",cat:"গ্যাজেট",desc:"পোর্টেবল মিউজিক স্পিকার",price:1450,icon:"🔊"}
-];
-const cart={};let filter="সব";
-function money(n){return n===0?"দাম জানতে যোগাযোগ করুন":"৳"+n.toLocaleString("bn-BD")}
-function renderProducts(){let q=document.getElementById("search").value.toLowerCase();let list=products.filter(p=>(filter==="সব"||p.cat===filter)&&(p.name+p.desc).toLowerCase().includes(q));document.getElementById("products").innerHTML=list.map(p=>`<article class="product"><div class="product-pic">${p.icon}</div><span class="tag">${p.cat}</span><h3>${p.name}</h3><p>${p.desc}</p><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add" onclick="addToCart(${p.id})">কার্টে যোগ +</button></div></article>`).join("")||'<p class="muted">কোনো পণ্য পাওয়া যায়নি।</p>'}
-function setFilter(v,b){filter=v;document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts()}
-function addToCart(id){cart[id]=(cart[id]||0)+1;updateCart();openCart()}
-function updateCart(){let count=Object.values(cart).reduce((a,b)=>a+b,0);document.getElementById("cartCount").textContent=count;let entries=Object.entries(cart);document.getElementById("cartItems").innerHTML=entries.length?entries.map(([id,qty])=>{let p=products.find(x=>x.id==id);return `<div class="cart-row"><div><b>${p.name}</b><small>${money(p.price)}</small></div><div class="qty"><button onclick="changeQty(${id},-1)">−</button>${qty}<button onclick="changeQty(${id},1)">+</button></div></div>`}).join(""):'<div class="empty">আপনার কার্ট এখনো খালি।</div>';let total=entries.reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);document.getElementById("total").textContent="৳"+total.toLocaleString("bn-BD")}
-function changeQty(id,n){cart[id]=(cart[id]||0)+n;if(cart[id]<=0)delete cart[id];updateCart()}
-function openCart(){document.getElementById("overlay").classList.add("show")}function closeCart(){document.getElementById("overlay").classList.remove("show")}
-function checkout(){let entries=Object.entries(cart);if(!entries.length){alert("আগে কার্টে পণ্য যোগ করুন।");return}let name=document.getElementById("customerName").value.trim(),phone=document.getElementById("customerPhone").value.trim(),address=document.getElementById("customerAddress").value.trim();if(!name||!phone||!address){alert("নাম, ফোন নম্বর ও ঠিকানা পূরণ করুন।");return}let lines=entries.map(([id,q])=>{let p=products.find(x=>x.id==id);return `${p.name} × ${q} — ${money(p.price)}`});let total=entries.reduce((s,[id,q])=>s+products.find(p=>p.id==id).price*q,0);let msg=`SK TELECOM অর্ডার%0Aনাম: ${encodeURIComponent(name)}%0Aফোন: ${encodeURIComponent(phone)}%0Aঠিকানা: ${encodeURIComponent(address)}%0Aপণ্য:%0A${encodeURIComponent(lines.join("\n"))}%0Aমোট (নমুনা দামে): ${encodeURIComponent("৳"+total)}`;const whatsappNumber="";if(whatsappNumber){window.open(`https://wa.me/${whatsappNumber}?text=${msg}`,"_blank")}else{let plain=decodeURIComponent(msg.replace(/%0A/g,"\n"));if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(plain).then(()=>alert("অর্ডারের বার্তা কপি হয়েছে। দোকানের WhatsApp নম্বর বসালে সরাসরি পাঠানো যাবে।"))}else{alert(plain)}}}
-document.getElementById("year").textContent=new Date().getFullYear();renderProducts();updateCart();
-document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>document.getElementById("nav").classList.remove("open")));
+const firebaseConfig = {
+  apiKey: "AIzaSyDHJjDUhsj43drdHBBzLvJairsQ2tp4VWA",
+  authDomain: "sk-telecom-49e8c.firebaseapp.com",
+  projectId: "sk-telecom-49e8c",
+  storageBucket: "sk-telecom-49e8c.firebasestorage.app",
+  messagingSenderId: "628340038367",
+  appId: "1:628340038367:web:6076b161cdfbd5b665a76a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let products = [];
+const cart = {};
+let filter = "সব";
+
+function money(n) {
+  return n === 0 ? "দাম জানতে যোগাযোগ করুন" : "৳" + n.toLocaleString("bn-BD");
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[c]);
+}
+
+function renderProducts() {
+  const q = document.getElementById("search").value.toLowerCase();
+
+  const list = products.filter(p =>
+    (filter === "সব" || p.cat === filter) &&
+    (p.name + p.desc + p.cat).toLowerCase().includes(q)
+  );
+
+  document.getElementById("products").innerHTML = list.map(p => {
+    const picture = p.imageUrl && /^https?:\/\//i.test(p.imageUrl)
+      ? `<img src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" style="width:100%;height:100%;object-fit:contain">`
+      : escapeHTML(p.icon);
+
+    return `
+    <article class="product">
+      <div class="product-pic">${picture}</div>
+      <span class="tag">${escapeHTML(p.cat)}</span>
+      <h3>${escapeHTML(p.name)}</h3>
+      <p>${escapeHTML(p.desc)}</p>
+      <div class="product-bottom">
+        <span class="price">${money(p.price)}</span>
+        <button class="add" onclick="addToCart('${p.id}')">কার্টে যোগ +</button>
+      </div>
+    </article>`;
+  }).join("") || '<p class="muted">কোনো পণ্য পাওয়া যায়নি।</p>';
+}
+
+function setFilter(v,b) {
+  filter = v;
+  document.querySelectorAll(".filter").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  renderProducts();
+}
+
+function addToCart(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  updateCart();
+  openCart();
+}
+
+function updateCart() {
+  let count = Object.values(cart).reduce((a,b) => a+b,0);
+  document.getElementById("cartCount").textContent = count;
+
+  let entries = Object.entries(cart);
+
+  document.getElementById("cartItems").innerHTML = entries.length
+    ? entries.map(([id,qty]) => {
+        let p = products.find(x => x.id == id);
+        if (!p) return "";
+        return `<div class="cart-row">
+          <div><b>${escapeHTML(p.name)}</b><small>${money(p.price)}</small></div>
+          <div class="qty">
+            <button onclick="changeQty('${id}',-1)">−</button>
+            ${qty}
+            <button onclick="changeQty('${id}',1)">+</button>
+          </div>
+        </div>`;
+      }).join("")
+    : '<div class="empty">আপনার কার্ট এখনো খালি।</div>';
+
+  let total = entries.reduce((s,[id,q]) => {
+    let p = products.find(x => x.id == id);
+    return s + (p ? p.price*q : 0);
+  },0);
+
+  document.getElementById("total").textContent =
+    "৳" + total.toLocaleString("bn-BD");
+}
+
+function changeQty(id,n) {
+  cart[id] = (cart[id] || 0) + n;
+  if (cart[id] <= 0) delete cart[id];
+  updateCart();
+}
+
+function openCart() {
+  document.getElementById("overlay").classList.add("show");
+}
+
+function closeCart() {
+  document.getElementById("overlay").classList.remove("show");
+}
+
+function checkout() {
+  let entries = Object.entries(cart);
+
+  if (!entries.length) {
+    alert("আগে কার্টে পণ্য যোগ করুন।");
+    return;
+  }
+
+  let name = document.getElementById("customerName").value.trim();
+  let phone = document.getElementById("customerPhone").value.trim();
+  let address = document.getElementById("customerAddress").value.trim();
+
+  if (!name || !phone || !address) {
+    alert("নাম, ফোন নম্বর ও ঠিকানা পূরণ করুন।");
+    return;
+  }
+
+  let lines = entries.map(([id,q]) => {
+    let p = products.find(x => x.id == id);
+    return p ? `${p.name} × ${q} — ${money(p.price)}` : "";
+  });
+
+  let total = entries.reduce((s,[id,q]) => {
+    let p = products.find(x => x.id == id);
+    return s + (p ? p.price*q : 0);
+  },0);
+
+  let msg = `SK TELECOM অর্ডার%0Aনাম: ${encodeURIComponent(name)}%0Aফোন: ${encodeURIComponent(phone)}%0Aঠিকানা: ${encodeURIComponent(address)}%0Aপণ্য:%0A${encodeURIComponent(lines.join("\n"))}%0Aমোট: ${encodeURIComponent("৳"+total)}`;
+
+  const whatsappNumber = "";
+
+  if (whatsappNumber) {
+    window.open(`https://wa.me/${whatsappNumber}?text=${msg}`,"_blank");
+  } else {
+    let plain = decodeURIComponent(msg.replace(/%0A/g,"\n"));
+    navigator.clipboard.writeText(plain)
+      .then(() => alert("অর্ডারের বার্তা কপি হয়েছে।"))
+      .catch(() => alert(plain));
+  }
+}
+
+// Firebase থেকে পণ্য লোড
+db.collection("products").onSnapshot(snapshot => {
+
+  products = snapshot.docs.map(item => {
+    const d = item.data();
+
+    return {
+      id: item.id,
+      name: d.name || "নাম নেই",
+      cat: d.category || d.cat || "অন্যান্য",
+      desc: d.description || d.desc || d.category || "SK TELECOM পণ্য",
+      price: Number(d.price) || 0,
+      icon: d.icon || "📦",
+      imageUrl: d.imageUrl || ""
+    };
+  });
+
+  renderProducts();
+  updateCart();
+
+}, error => {
+  console.error(error);
+  document.getElementById("products").textContent =
+    "পণ্য লোড করতে সমস্যা হয়েছে: " + error.message;
+});
+
+document.getElementById("year").textContent =
+  new Date().getFullYear();
+
+updateCart();
+
+document.querySelectorAll("nav a").forEach(a =>
+  a.addEventListener("click", () =>
+    document.getElementById("nav").classList.remove("open")
+  )
+);
 </script>
+
 </body></html>
