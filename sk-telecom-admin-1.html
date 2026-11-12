@@ -1,188 +1,181 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SK TELECOM Admin</title>
+<title>SK TELECOM — Admin Panel</title>
 <style>
-body{font-family:Arial;background:#f1f4f9;margin:0;padding:20px}
-.container{max-width:500px;margin:auto;background:white;padding:20px;border-radius:12px}
-h2{text-align:center;color:#1456a0}
-input,button{width:100%;padding:13px;margin:7px 0;box-sizing:border-box;border-radius:7px;border:1px solid #ccc}
-button{background:#1456a0;color:white;border:0;font-weight:bold}
-.delete{background:#d93025}
-.product{border:1px solid #ddd;padding:12px;margin:10px 0;border-radius:8px}
-img{max-width:100%;height:140px;object-fit:contain}
-.hidden{display:none}
+:root{--bg:#0b0b0b;--panel:#171717;--gold:#d7ad57;--text:#f8f5ed;--muted:#b7b0a2;--line:rgba(215,173,87,.3);--red:#d94b4b}
+*{box-sizing:border-box}body{margin:0;padding:18px;background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans Bengali",sans-serif}
+.wrap{max-width:850px;margin:auto}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0}
+h1,h2,h3{color:var(--gold)}h1{text-align:center;font-size:25px}label{display:block;margin:10px 0 4px;color:var(--muted);font-size:14px}
+input,textarea,select,button{font:inherit;width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:#101010;color:var(--text);margin:5px 0}
+textarea{min-height:80px;resize:vertical}button{background:var(--gold);color:#17120a;border:0;font-weight:bold;cursor:pointer}
+button.secondary{background:#29251c;color:var(--gold)}button.danger{background:var(--red);color:white}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hidden{display:none!important}
+.msg{padding:10px;border-radius:8px;background:#242018;color:var(--gold);white-space:pre-wrap;margin-top:10px}
+.item{border:1px solid var(--line);border-radius:10px;padding:13px;margin:12px 0;display:grid;grid-template-columns:90px 1fr;gap:12px}
+.item img{width:90px;height:90px;object-fit:contain;background:#0c0c0c;border-radius:8px}
+.item h3{margin:0 0 5px}.item p{margin:3px 0;color:var(--muted);font-size:14px}
+.actions{display:flex;gap:8px;margin-top:9px}.actions button{width:auto;flex:1}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.top button{width:auto;padding:9px 14px}
+.note{color:var(--muted);font-size:13px;line-height:1.5}
+@media(max-width:560px){.row{grid-template-columns:1fr}.item{grid-template-columns:70px 1fr}.item img{width:70px;height:70px}.panel{padding:14px}.actions{flex-direction:column}}
 </style>
 </head>
 <body>
-<div class="container">
-<h2>SK TELECOM</h2>
-<h3>Admin Login</h3>
+<div class="wrap">
+  <h1>SK TELECOM — ADMIN PANEL</h1>
 
-<div id="login">
-<input id="email" type="email" placeholder="Admin Email">
-<input id="password" type="password" placeholder="Password">
-<button id="loginBtn">Login</button>
-</div>
+  <section class="panel" id="loginPanel">
+    <h2>Admin Login</h2>
+    <label>Admin Email</label><input id="email" type="email" autocomplete="username" placeholder="আপনার Admin Email">
+    <label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড">
+    <button id="loginBtn">লগইন করুন</button>
+    <p class="note">Firebase Authentication-এ আগে থেকে তৈরি করা Admin Email ও Password ব্যবহার করুন।</p>
+  </section>
 
-<div id="dashboard" class="hidden">
-<h3>নতুন পণ্য যোগ করুন</h3>
-<input id="name" placeholder="পণ্যের নাম">
-<input id="price" type="number" placeholder="পণ্যের দাম">
-<input id="category" placeholder="ক্যাটাগরি">
-<input id="imageUrl" type="url" placeholder="ছবির URL">
-<button id="addBtn">পণ্য যোগ করুন</button>
-<button id="logoutBtn">Logout</button>
-<hr>
-<h3>আমার পণ্যসমূহ</h3>
-<div id="products">লোড হচ্ছে...</div>
-</div>
-<p id="message"></p>
+  <main id="dashboard" class="hidden">
+    <section class="panel">
+      <div class="top"><h2>পণ্য যোগ / সম্পাদনা</h2><button class="secondary" id="logoutBtn">Logout</button></div>
+      <input id="editId" type="hidden">
+      <label>পণ্যের নাম *</label><input id="name" placeholder="যেমন: Samsung Galaxy A15">
+      <div class="row">
+        <div><label>দাম (টাকা) *</label><input id="price" type="number" min="0" step="1" placeholder="15000"></div>
+        <div><label>ক্যাটাগরি *</label>
+          <select id="category"><option value="ফোন">ফোন</option><option value="এক্সেসরিজ">এক্সেসরিজ</option><option value="গ্যাজেট">গ্যাজেট</option><option value="অন্যান্য">অন্যান্য</option></select>
+        </div>
+      </div>
+      <label>পণ্যের বিবরণ</label><textarea id="description" placeholder="পণ্যের বিস্তারিত লিখুন"></textarea>
+      <div class="row">
+        <div><label>ছবির URL (ঐচ্ছিক)</label><input id="imageUrl" type="url" placeholder="https://..."></div>
+        <div><label>ছবি না থাকলে আইকন</label><input id="icon" maxlength="8" value="📦" placeholder="📱"></div>
+      </div>
+      <div class="row"><button id="saveBtn">পণ্য যোগ করুন</button><button class="secondary hidden" id="cancelBtn">সম্পাদনা বাতিল</button></div>
+      <p class="note">ছবির URL অবশ্যই https:// অথবা http:// দিয়ে শুরু হতে হবে।</p>
+      <div id="message" class="msg" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <div class="top"><h2>ওয়েবসাইটের পণ্যসমূহ</h2><strong id="count">০টি</strong></div>
+      <div id="products">পণ্য লোড হচ্ছে...</div>
+    </section>
+  </main>
 </div>
 
 <script type="module">
-import {initializeApp}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-getAuth, signInWithEmailAndPassword,
-onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-getFirestore, collection, addDoc,
-getDocs, deleteDoc, doc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyDHJjDUhsj43drdHBBzLvJairsQ2tp4VWA",
-authDomain: "sk-telecom-49e8c.firebaseapp.com",
-projectId: "sk-telecom-49e8c",
-storageBucket: "sk-telecom-49e8c.firebasestorage.app",
-messagingSenderId: "628340038367",
-appId: "1:628340038367:web:6076b161cdfbd5b665a76a"
+  apiKey: "AIzaSyDHJjDUhsj43drdHBBzLvJairsQ2tp4VWA",
+  authDomain: "sk-telecom-49e8c.firebaseapp.com",
+  projectId: "sk-telecom-49e8c",
+  storageBucket: "sk-telecom-49e8c.firebasestorage.app",
+  messagingSenderId: "628340038367",
+  appId: "1:628340038367:web:6076b161cdfbd5b665a76a"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 const $ = id => document.getElementById(id);
-const message = text => $("message").textContent = text;
+let stopProductsListener = null;
+let cachedProducts = [];
 
-$("loginBtn").onclick = async () => {
-try {
-await signInWithEmailAndPassword(
-auth, $("email").value.trim(), $("password").value
-);
-message("Login সফল হয়েছে");
-} catch(e) {
-message("Login হয়নি: " + e.message);
+function say(text){$("message").textContent=text;}
+function resetForm(){
+  $("editId").value=""; $("name").value=""; $("price").value="";
+  $("category").value="ফোন"; $("description").value="";
+  $("imageUrl").value=""; $("icon").value="📦";
+  $("saveBtn").textContent="পণ্য যোগ করুন"; $("cancelBtn").classList.add("hidden");
 }
-};
+$("loginBtn").addEventListener("click",async()=>{
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email||!password){alert("ইমেইল ও পাসওয়ার্ড লিখুন।");return;}
+  $("loginBtn").disabled=true;
+  try{await signInWithEmailAndPassword(auth,email,password);}
+  catch(e){alert("লগইন হয়নি: "+e.message);}
+  finally{$("loginBtn").disabled=false;}
+});
+$("logoutBtn").addEventListener("click",()=>signOut(auth));
+$("cancelBtn").addEventListener("click",resetForm);
 
-onAuthStateChanged(auth, user => {
-$("login").classList.toggle("hidden", !!user);
-$("dashboard").classList.toggle("hidden", !user);
-if(user) loadProducts();
+onAuthStateChanged(auth,user=>{
+  $("loginPanel").classList.toggle("hidden",!!user);
+  $("dashboard").classList.toggle("hidden",!user);
+  if(user){say("লগইন সফল। এখন পণ্য যোগ বা সম্পাদনা করতে পারবেন।");listenProducts();}
+  else if(stopProductsListener){stopProductsListener();stopProductsListener=null;}
 });
 
-$("logoutBtn").onclick = () => signOut(auth);
-
-$("addBtn").onclick = async () => {
-const name = $("name").value.trim();
-const price = Number($("price").value);
-const category = $("category").value.trim();
-const imageUrl = $("imageUrl").value.trim();
-
-if(!name || !price || price < 0) {
-message("পণ্যের নাম ও সঠিক দাম লিখুন");
-return;
+function listenProducts(){
+  if(stopProductsListener)stopProductsListener();
+  $("products").textContent="পণ্য লোড হচ্ছে...";
+  stopProductsListener=onSnapshot(collection(db,"products"),snapshot=>{
+    cachedProducts=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+    $("count").textContent=String(cachedProducts.length)+"টি";
+    renderProducts();
+  },error=>{$("products").textContent="পণ্য লোড হয়নি: "+error.message;});
 }
 
-if(imageUrl && !/^https?:\/\//i.test(imageUrl)) {
-message("সঠিক ছবির URL দিন");
-return;
+function renderProducts(){
+  const area=$("products"); area.replaceChildren();
+  if(!cachedProducts.length){area.textContent="এখনো কোনো পণ্য যোগ করা হয়নি।";return;}
+  cachedProducts.forEach(p=>{
+    const card=document.createElement("article");card.className="item";
+    if(p.imageUrl){
+      const img=document.createElement("img");img.src=p.imageUrl;img.alt=p.name||"Product";
+      img.onerror=()=>{img.remove();};card.append(img);
+    }else{
+      const icon=document.createElement("div");icon.textContent=p.icon||"📦";icon.style.cssText="display:grid;place-items:center;font-size:36px;background:#0c0c0c;border-radius:8px";card.append(icon);
+    }
+    const info=document.createElement("div");
+    const title=document.createElement("h3");title.textContent=p.name||"নাম নেই";
+    const price=document.createElement("p");price.textContent="দাম: ৳"+Number(p.price||0).toLocaleString("bn-BD");
+    const cat=document.createElement("p");cat.textContent="ক্যাটাগরি: "+(p.category||p.cat||"অন্যান্য");
+    const desc=document.createElement("p");desc.textContent=p.description||p.desc||"";
+    const actions=document.createElement("div");actions.className="actions";
+    const edit=document.createElement("button");edit.className="secondary";edit.textContent="Edit";
+    edit.onclick=()=>editProduct(p.id);
+    const del=document.createElement("button");del.className="danger";del.textContent="Delete";
+    del.onclick=()=>removeProduct(p.id,p.name);
+    actions.append(edit,del);info.append(title,price,cat,desc,actions);card.append(info);area.append(card);
+  });
 }
 
-try {
-await addDoc(collection(db,"products"), {
-name, price, category, imageUrl,
-createdAt: serverTimestamp()
+function editProduct(id){
+  const p=cachedProducts.find(x=>x.id===id);if(!p)return;
+  $("editId").value=id;$("name").value=p.name||"";$("price").value=p.price??"";
+  $("category").value=p.category||p.cat||"অন্যান্য";
+  $("description").value=p.description||p.desc||"";
+  $("imageUrl").value=p.imageUrl||"";$("icon").value=p.icon||"📦";
+  $("saveBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelBtn").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});say("পণ্য সম্পাদনা করুন, তারপর সংরক্ষণ চাপুন।");
+}
+
+async function removeProduct(id,name){
+  if(!confirm("“"+(name||"এই পণ্য")+"” মুছে ফেলবেন?"))return;
+  try{await deleteDoc(doc(db,"products",id));say("পণ্য মুছে ফেলা হয়েছে।");}
+  catch(e){say("মুছতে সমস্যা: "+e.message);}
+}
+
+$("saveBtn").addEventListener("click",async()=>{
+  const name=$("name").value.trim(), rawPrice=$("price").value;
+  const price=Number(rawPrice),category=$("category").value;
+  const description=$("description").value.trim(),imageUrl=$("imageUrl").value.trim();
+  const icon=$("icon").value.trim()||"📦",id=$("editId").value;
+  if(!name||rawPrice===""||!Number.isFinite(price)||price<0){say("পণ্যের নাম ও সঠিক দাম লিখুন।");return;}
+  if(imageUrl&&!/^https?:\/\//i.test(imageUrl)){say("ছবির সঠিক URL দিন।");return;}
+  const data={name,price,category,description,imageUrl,icon,updatedAt:serverTimestamp()};
+  $("saveBtn").disabled=true;
+  try{
+    if(id){await updateDoc(doc(db,"products",id),data);say("পণ্যের পরিবর্তন সংরক্ষণ হয়েছে।");}
+    else{await addDoc(collection(db,"products"),{...data,createdAt:serverTimestamp()});say("নতুন পণ্য সফলভাবে যোগ হয়েছে।");}
+    resetForm();
+  }catch(e){say("সংরক্ষণ হয়নি: "+e.message);}
+  finally{$("saveBtn").disabled=false;}
 });
-message("পণ্য সফলভাবে যোগ হয়েছে");
-$("name").value = "";
-$("price").value = "";
-$("category").value = "";
-$("imageUrl").value = "";
-loadProducts();
-} catch(e) {
-message("পণ্য যোগ হয়নি: " + e.message);
-}
-};
-
-async function loadProducts() {
-const area = $("products");
-area.textContent = "লোড হচ্ছে...";
-
-try {
-const snapshot = await getDocs(collection(db,"products"));
-area.replaceChildren();
-
-if(snapshot.empty) {
-area.textContent = "এখনো কোনো পণ্য যোগ করা হয়নি";
-return;
-}
-
-snapshot.forEach(item => {
-const p = item.data();
-const card = document.createElement("div");
-card.className = "product";
-
-const title = document.createElement("h3");
-title.textContent = p.name || "";
-
-const price = document.createElement("p");
-price.textContent = "দাম: ৳" + (p.price ?? "");
-
-const category = document.createElement("p");
-category.textContent = "ক্যাটাগরি: " + (p.category || "");
-
-card.append(title, price, category);
-
-if(p.imageUrl) {
-const img = document.createElement("img");
-img.src = p.imageUrl;
-img.alt = p.name || "Product";
-img.onerror = () => img.remove();
-card.append(img);
-}
-
-const btn = document.createElement("button");
-btn.className = "delete";
-btn.textContent = "Delete";
-btn.onclick = async () => {
-if(confirm("এই পণ্যটি মুছে ফেলবেন?")) {
-try {
-await deleteDoc(doc(db,"products",item.id));
-message("পণ্য মুছে ফেলা হয়েছে");
-loadProducts();
-} catch(e) {
-message("মুছতে সমস্যা হয়েছে: " + e.message);
-}
-}
-};
-
-card.append(btn);
-area.append(card);
-});
-} catch(e) {
-area.textContent = "পণ্য লোড হয়নি: " + e.message;
-}
-}
 </script>
 </body>
 </html>
